@@ -102,11 +102,13 @@ module Jammit
       end
     end
 
-    # Compiles a single JST file by writing out a javascript that adds
-    # template properties to a top-level template namespace object. Adds a
-    # JST-compilation function to the top of the package, unless you've
-    # specified your own preferred function, or turned it off.
-    # JST templates are named with the basename of their file.
+    # Compiles a single JST file by writing out a javascript that calls the
+    # JST-compilation function specified in assets.yml.  This function does
+    # two things: (1) registers each template as a partial with Handlebars.
+    #             (2) precompiles templates so that rendering them is faster.
+    # The template name sent to the JST-compilation function is structured
+    # like this: "dir/template_file_name".  If you'd rather not use JST
+    # compilation, it can be turned off in assets.yml as well.
     def compile_jst(paths)
       namespace   = Jammit.template_namespace
       paths       = paths.grep(Jammit.template_extension_matcher).sort
@@ -115,7 +117,7 @@ module Jammit
         contents  = read_binary_file(path)
         contents  = contents.gsub(/\r?\n/, "\\n").gsub("'", '\\\\\'')
         name      = template_name(path, base_path)
-        "#{namespace}['#{name}'] = #{Jammit.template_function}('#{contents}');"
+        "#{Jammit.template_function}('#{name}', '#{contents}');"
       end
       compiler = Jammit.include_jst_script ? read_binary_file(DEFAULT_JST_SCRIPT) : '';
       setup_namespace = "#{namespace} = #{namespace} || {};"
